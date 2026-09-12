@@ -47,3 +47,39 @@ Todo lo que hay bajo `src/overlord/cogs/` se descubre y carga automáticamente a
 ```bash
 pytest
 ```
+
+## Despliegue (costo $0/mes: Oracle Cloud Free Tier)
+
+El bot corre en un contenedor Docker con reinicio automático, así que el mantenimiento se reduce a `git pull` + rebuild cuando cambia algo.
+
+### 1. Levantar el servidor (una sola vez)
+
+1. Creá una cuenta en [Oracle Cloud](https://www.oracle.com/cloud/free/) (pide tarjeta para verificar identidad, pero el shape "Always Free" nunca cobra).
+2. Creá una instancia **Always Free**: shape `VM.Standard.A1.Flex` (ARM, hasta 4 OCPU/24GB) si hay disponibilidad en tu región, o `VM.Standard.E2.1.Micro` (x86, 1 OCPU/1GB) como respaldo — cualquiera de las dos alcanza de sobra para este bot. Imagen: Ubuntu 22.04+.
+3. Abrí el puerto de salida (el bot solo hace conexiones salientes hacia Discord, no necesitás abrir puertos entrantes).
+4. Conectate por SSH e instalá Docker:
+
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER   # cerrá sesión y volvé a entrar para que aplique
+```
+
+### 2. Desplegar el bot
+
+```bash
+git clone https://github.com/Sebas1705/discord-bots.git
+cd discord-bots
+cp .env.example .env
+nano .env                       # completar DISCORD_TOKEN
+docker compose up -d --build
+```
+
+### 3. Mantenimiento
+
+```bash
+docker compose logs -f          # ver logs en vivo
+docker compose restart          # reiniciar sin perder configuración (data/ persiste)
+git pull && docker compose up -d --build   # actualizar a la última versión
+```
+
+`restart: unless-stopped` en `docker-compose.yml` hace que el bot vuelva solo si se cae el proceso o se reinicia la VM — no hace falta un cron ni supervisor aparte. Los tests corren automáticamente en cada push (`.github/workflows/test.yml`, gratis en GitHub Actions), así que un `git pull` en el servidor solo trae código que ya pasó CI.
