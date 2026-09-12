@@ -1,0 +1,22 @@
+import pytest
+
+from overlord.config import Settings
+from overlord.main import build_bot
+
+
+def test_build_bot_loads_all_cogs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DISCORD_TOKEN", "fake-token")
+    settings = Settings.from_env()
+
+    bot = build_bot(settings)
+
+    assert bot.settings is settings
+    assert set(bot.cogs) == {
+        "GuildSettings",
+        "Admin",
+        "Moderation",
+        "Welcome",
+        "CustomCommands",
+        "Music",
+        "Utility",
+    }

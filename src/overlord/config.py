@@ -10,8 +10,6 @@ load_dotenv()
 class Settings:
     token: str
     prefix: str
-    welcome_channel_id: int | None
-    auto_role_id: int | None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -22,10 +20,4 @@ class Settings:
         return cls(
             token=token,
             prefix=os.environ.get("BOT_PREFIX", "!"),
-            welcome_channel_id=_optional_int(os.environ.get("WELCOME_CHANNEL_ID")),
-            auto_role_id=_optional_int(os.environ.get("AUTO_ROLE_ID")),
         )
-
-
-def _optional_int(value: str | None) -> int | None:
-    return int(value) if value else None

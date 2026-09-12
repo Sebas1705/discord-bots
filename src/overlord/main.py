@@ -1,18 +1,24 @@
 import logging
+import pkgutil
 
 import discord
 from discord.ext import commands
 
+from . import cogs
 from .config import Settings
+from .errors import register as register_error_handlers
+from .logging_setup import configure
 
 log = logging.getLogger("bot")
 
-EXTENSIONS = (
-    "src.bot.cogs.moderation",
-    "src.bot.cogs.welcome",
-    "src.bot.cogs.music",
-    "src.bot.cogs.utility",
-)
+
+def _discover_extensions() -> list[str]:
+    """Every module under `cogs/` is loaded automatically.
+
+    Drop a new cog file in `cogs/` and it's wired up for free — nothing
+    else here needs to change.
+    """
+    return [f"{cogs.__name__}.{module.name}" for module in pkgutil.iter_modules(cogs.__path__)]
 
 
 def build_bot(settings: Settings) -> commands.Bot:
@@ -23,18 +29,20 @@ def build_bot(settings: Settings) -> commands.Bot:
     bot = commands.Bot(command_prefix=settings.prefix, intents=intents)
     bot.settings = settings  # type: ignore[attr-defined]
 
-    for extension in EXTENSIONS:
+    for extension in _discover_extensions():
         bot.load_extension(extension)
+
+    register_error_handlers(bot)
 
     @bot.event
     async def on_ready() -> None:
-        log.info("Logged in as %s (id=%s)", bot.user, bot.user.id if bot.user else "?")
+        log.info("Overlord logged in as %s (id=%s)", bot.user, bot.user.id if bot.user else "?")
 
     return bot
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO)
+    configure()
     settings = Settings.from_env()
     bot = build_bot(settings)
     bot.run(settings.token)
