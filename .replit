@@ -1,0 +1,5 @@
+run = "pip install -q -e . && overlord"
+entrypoint = "src/overlord/main.py"
+
+[nix]
+channel = "stable-23_11"

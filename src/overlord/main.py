@@ -1,4 +1,5 @@
 import logging
+import os
 import pkgutil
 
 import discord
@@ -43,6 +44,14 @@ def build_bot(settings: Settings) -> commands.Bot:
 
 def main() -> None:
     configure()
+
+    # REPL_ID is set automatically by Replit; nowhere else. On a real host
+    # (Docker/VPS) this stays off and nothing extra runs.
+    if os.environ.get("REPL_ID"):
+        from .keep_alive import start as start_keep_alive
+
+        start_keep_alive()
+
     settings = Settings.from_env()
     bot = build_bot(settings)
     bot.run(settings.token)

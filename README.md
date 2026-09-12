@@ -4,7 +4,7 @@ Bot de Discord "god bot" para un único servidor personal: py-cord, todas las ca
 
 ## Requisitos
 
-- Python 3.13+
+- Python 3.11+
 - [ffmpeg](https://ffmpeg.org/) instalado y en el `PATH` (para el cog de música)
 - Una aplicación + bot en el [Discord Developer Portal](https://discord.com/developers/applications), con los intents **Message Content** y **Server Members** activados
 
@@ -48,7 +48,11 @@ Todo lo que hay bajo `src/overlord/cogs/` se descubre y carga automáticamente a
 pytest
 ```
 
-## Despliegue (costo $0/mes: Oracle Cloud Free Tier)
+## Despliegue
+
+Dos caminos, según cuánta fricción de cuenta/tarjeta estés dispuesto a aceptar a cambio de confiabilidad.
+
+### Opción A — Oracle Cloud Free Tier (recomendada: $0/mes de por vida, VPS real)
 
 El bot corre en un contenedor Docker con reinicio automático, así que el mantenimiento se reduce a `git pull` + rebuild cuando cambia algo.
 
@@ -83,3 +87,15 @@ git pull && docker compose up -d --build   # actualizar a la última versión
 ```
 
 `restart: unless-stopped` en `docker-compose.yml` hace que el bot vuelva solo si se cae el proceso o se reinicia la VM — no hace falta un cron ni supervisor aparte. Los tests corren automáticamente en cada push (`.github/workflows/test.yml`, gratis en GitHub Actions), así que un `git pull` en el servidor solo trae código que ya pasó CI.
+
+### Opción B — Replit + UptimeRobot ($0, sin tarjeta ni cuenta de nube)
+
+**Trade-offs, en serio, antes de elegir esto:** Replit puede dormir el repl igual pese al ping (lo restringen cada tanto en el free tier), los recursos son bajos (podés notarlo con `music` bajo carga), y no es un uso oficialmente pensado para procesos 24/7 — es la comunidad de bots hobby la que lo adoptó así. Si en algún momento te cansás de que se caiga, la migración a Docker/Oracle (arriba) es directa porque es el mismo código.
+
+1. Entrá a [replit.com](https://replit.com), creá cuenta (solo email, sin tarjeta) e importá este repo (`Create Repl` → `Import from GitHub` → `Sebas1705/discord-bots`). Replit detecta `.replit` y `replit.nix` automáticamente (instala Python y `ffmpeg`).
+2. En la pestaña **Secrets** (no uses `.env` acá) agregá `DISCORD_TOKEN` y opcionalmente `BOT_PREFIX`.
+3. Apretá **Run**. La primera vez instala dependencias (`pip install -e .`) y levanta el bot junto con un mini servidor HTTP (`keep_alive.py`) en el puerto que Replit expone públicamente — así es como un pinger externo lo mantiene despierto.
+4. Copiá la URL que te da el panel de Replit (algo como `https://discord-bots.tuusuario.repl.co`).
+5. Creá una cuenta gratis en [UptimeRobot](https://uptimerobot.com) (sin tarjeta) y agregá un monitor **HTTP(s)** apuntando a esa URL, con intervalo de 5 minutos. Eso evita que Replit duerma el repl por inactividad.
+
+`keep_alive.py` solo se activa cuando detecta la variable `REPL_ID` (que Replit define solo) — en Docker/Oracle no hace nada, así que el mismo repo sirve para ambos caminos sin tocar código.
